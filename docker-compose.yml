@@ -1,0 +1,33 @@
+version: '3.11'
+
+
+services:
+  bot:
+    build: .
+    restart: always
+    container_name: getfit
+    environment:
+      BOT_TOKEN: 6408363442:AAFQdRmPBBJpTi1_S59VC6zppaFXDVTFGrA
+      DB_NAME: postgres
+      DB_PASSWORD: 1
+      DB_HOST: pg
+      DB_USER: postgres
+      DB_PORT: 5432
+    depends_on:
+      - pg
+    command: python3 main.py
+
+
+  pg:
+    image: postgres
+    restart: always
+    container_name: getfit_db
+    environment:
+      POSTGRES_PASSWORD: 1
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data/
+
+volumes:
+  pg_data:
