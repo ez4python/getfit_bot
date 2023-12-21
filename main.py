@@ -1,26 +1,24 @@
 import asyncio
 import logging
-import sys
 import os
-from aiogram import Bot, Dispatcher, F
+import sys
+
+from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
-from aiogram.filters import CommandStart
+from aiogram.filters import CommandStart, Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import Message
-from reply import start, bot_menu, man_woman, week_days
-from utils import *
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, BIGINT, insert, select
 from sqlalchemy.orm import declarative_base, Mapped, Session, mapped_column
 
-# https://t.me/illegal_testing_bot
-TOKEN = "6408363442:AAFQdRmPBBJpTi1_S59VC6zppaFXDVTFGrA"
-dp = Dispatcher()
-choosing = "Quydagilardan birontasini tanlang 👇🏿"
+from reply import start, bot_menu, man_woman, week_days
+from utils import *
 
-file = "AgACAgIAAxkBAAICyGVxoNZw4V7dYVKyA4LCyFZsEB56AAJS0zEbVxSRSwfrKkVSj3XlAQADAgADcwADMwQ"
-photo_caption = "Assalomu alaykum !\nBu botimiz sizga kunlik qiladigan 🏋️ mashqlarni ko'rsatib beradi"
+# https://t.me/illegal_testing_bot
+TOKEN = os.getenv('BOT_TOKEN')
+dp = Dispatcher()
 
 load_dotenv()
 Base = declarative_base()
@@ -57,6 +55,7 @@ class UserStates(StatesGroup):
     months = State()
     weeks = State()
     back = State()
+    advertising = State()
 
 
 @dp.message(CommandStart())
@@ -91,7 +90,7 @@ async def admin_handler(msg: Message):
     await msg.answer_location(latitude=41.304476, longitude=69.253043, reply_markup=bot_menu())
 
 
-@dp.message(lambda msg: msg.text == "NewsPost")
+@dp.message(lambda msg: msg.text == "News")
 async def news_handler(msg: Message):
     text1 = f"""
 title: {data1.get('title')}
@@ -122,7 +121,7 @@ time: {data4.get('time')}
 @dp.message(UserStates.choosing_male)
 async def man_woman_handler(msg: Message, state: FSMContext):
     if msg.text == '🔙 Back':
-        await msg.answer_photo(photo=file, caption=photo_caption, reply_markup=bot_menu())
+        await msg.answer(text=main_menu_text, reply_markup=bot_menu())
     else:
         await msg.answer(text=choosing, reply_markup=man_woman())
         await state.set_state(UserStates.months)
@@ -131,24 +130,38 @@ async def man_woman_handler(msg: Message, state: FSMContext):
 @dp.message(UserStates.months)
 async def weekday_handler(msg: Message, state: FSMContext):
     if msg.text == '🔙 Back':
-        await msg.answer_photo(photo=file, caption=photo_caption, reply_markup=bot_menu())
+        await msg.answer(text=main_menu_text, reply_markup=bot_menu())
     else:
         await msg.answer(text="Hafta kunlaridan birontasini tanlang", reply_markup=week_days())
         await state.set_state(UserStates.weeks)
 
 
 @dp.message(UserStates.weeks)
-async def training(msg: Message, state: FSMContext):
+async def trainings_handler(msg: Message):
     if msg.text == '🔙 Back':
-        await msg.answer_photo(photo=file, caption=photo_caption, reply_markup=bot_menu())
+        await msg.answer(text=main_menu_text, reply_markup=bot_menu())
     else:
-        for picture in pictures:
-            await msg.answer_photo(photo=picture, reply_markup=week_days())
+        for training in training_list:
+            await msg.answer_photo(photo=training.get('file'), caption=training.get('desc'), reply_markup=week_days())
 
 
-@dp.message(F.photo)
-async def picture_handler(msg: Message):
-    await msg.answer(msg.photo[0].file_id)
+@dp.message(Command('advert'))
+async def advert_cmd_handler(msg: Message, state: FSMContext):
+    if msg.from_user.id == 1998050207:  # here must be telegram id of admin
+        await state.set_state(UserStates.advertising)
+        await msg.answer('Send me ad-message 🚀')
+    else:
+        await msg.answer("Sorry, but you aren't admin)")
+
+
+@dp.message(UserStates.advertising)
+async def advertising_handler(msg: Message):
+    users = session.query(User).all()
+    for user in users:
+        try:
+            await msg.copy_to(user.user_id)
+        except Exception as e:
+            print(e, user.user_id)
 
 
 async def main() -> None:

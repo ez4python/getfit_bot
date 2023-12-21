@@ -5,7 +5,7 @@ def bot_menu():
     btn1 = KeyboardButton(text="Filial 📍")
     btn2 = KeyboardButton(text="Start ✅")
     btn3 = KeyboardButton(text="Admin 👨🏻‍💻")
-    btn4 = KeyboardButton(text="NewsPost")
+    btn4 = KeyboardButton(text="News")
     design = [
         [btn1, btn2],
         [btn3],
